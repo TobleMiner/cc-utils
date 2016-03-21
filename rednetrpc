@@ -40,9 +40,6 @@ function RednetRpc:callRemote(id, action, args)
 	local success, data = pcall(function()
 			return self:processResponse(msg)
 		end)
-	if type(data) == 'table' and type(data['success']) == 'boolean' then
-		success = data['success']
-	end
 	return success, data
 end
 
