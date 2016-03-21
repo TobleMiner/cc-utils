@@ -1,0 +1,73 @@
+Inventory = { }
+Inventory.__index = Inventory
+
+setmetatable(Inventory, {
+	__call = function (cls, ...)
+		return cls.new(...)
+	end
+})
+
+function Inventory.new(side)
+    local inv = { }
+    setmetatable(inv, Inventory)
+	inv.side = side
+    return inv
+end
+
+function Inventory:wrap()
+	self.inv = peripheral.wrap(self.side)
+end
+
+function Inventory:getStack(slot)
+	return self.inv.getStackInSlot(slot)
+end
+
+function Inventory:getAllStacks()
+	self.inv.getAllStacks()
+end
+
+function Inventory:getSize()
+	return self.inv.getInventorySize()
+end
+
+function Inventory:findSlot(id, minsize, damage)
+    local size = self:getSize()
+    for i = 1, size, 1 do
+        local stack = self.inv.getStackInSlot(i)
+        if(stack ~= nil and id == stack.id and
+            (minsize == nil or minsize >= stack.qty) and
+            (damage == nil or damage == stack.dmg)) then
+            return i
+        end
+    end
+    return nil
+end
+
+function Inventory:pullStack(inv, index, num, targetIndex)
+    if self.inv.pullItem(inv.side, index, num, targetIndex) ~= num then
+        return false
+    end
+    return true
+end
+
+function Inventory:pushStack(inv, index, num, targetIndex)
+    local stack = self.inv.getStackInSlot(index)
+    if stack == nil then
+		return false
+	end
+	local qty = self.inv.pushItem(inv.side, index, num, targetIndex)
+	if qty ~= stack.qty then
+		return false, qty
+	end
+    return true, qty
+end
+
+function Inventory:pushAll(pos)
+    local size = self.inv.getInventorySize()
+    for i = 1, size, 1 do
+        if(not self:moveStack(i, pos)) then
+            return false
+        end
+    end
+    return true
+end
