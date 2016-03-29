@@ -1,0 +1,21 @@
+NSInjector = { }
+NSInjector.__index = NSInjector
+
+setmetatable(NSInjector, {
+	__call = function (cls, ...)
+		return cls.new(...)
+	end
+})
+
+function NSInjector.new(ns)
+	local injector = { }
+	setmetatable(injector, NSInjector)
+	injector.ns = ns
+	return injector
+end
+
+function NSInjector:inject(t)
+	for k,v in pairs(t) do
+		self.ns[k] = v
+	end
+end
