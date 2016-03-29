@@ -8,10 +8,11 @@ setmetatable(Inventory, {
 })
 
 function Inventory.new(side)
-    local inv = { }
-    setmetatable(inv, Inventory)
+	local inv = { }
+	setmetatable(inv, Inventory)
 	inv.side = side
-    return inv
+	inv.invDirections = { }
+	return inv
 end
 
 function Inventory:wrap()
@@ -31,43 +32,55 @@ function Inventory:getSize()
 end
 
 function Inventory:findSlot(id, minsize, damage)
-    local size = self:getSize()
-    for i = 1, size, 1 do
-        local stack = self.inv.getStackInSlot(i)
-        if(stack ~= nil and id == stack.id and
-            (minsize == nil or minsize >= stack.qty) and
-            (damage == nil or damage == stack.dmg)) then
-            return i
-        end
-    end
-    return nil
+	local size = self:getSize()
+	for i = 1, size, 1 do
+		local stack = self.inv.getStackInSlot(i)
+		if(stack ~= nil and id == stack.id and
+			(minsize == nil or minsize >= stack.qty) and
+			(damage == nil or damage == stack.dmg)) then
+			return i
+		end
+	end
+	return nil
 end
 
 function Inventory:pullStack(inv, index, num, targetIndex)
-    if self.inv.pullItem(inv.side, index, num, targetIndex) ~= num then
-        return false
-    end
-    return true
+	if self.inv.pullItem(self:getInventoryDirection(inv), index, num, targetIndex) ~= num and num ~=  nil then
+		return false
+	end
+	return true
 end
 
 function Inventory:pushStack(inv, index, num, targetIndex)
-    local stack = self.inv.getStackInSlot(index)
-    if stack == nil then
+	local stack = self.inv.getStackInSlot(index)
+	if stack == nil then
 		return false
 	end
-	local qty = self.inv.pushItem(inv.side, index, num, targetIndex)
-	if qty ~= stack.qty then
-		return false, qty
+	local qty = self.inv.pushItem(self:getInventoryDirection(inv), index, num, targetIndex)
+	if (num ~= nil and qty == num) or (num == nil and qty == stack.qty) then
+		return true, qty
 	end
-    return true, qty
+	return false, qty
 end
 
-function Inventory:pushAll(pos)
-    local size = self.inv.getInventorySize()
-    for i = 1, size, 1 do
-        if(not self:moveStack(i, pos)) then
-            return false
-        end
-    end
-    return true
+function Inventory:pushAll(inv)
+	local size = self.inv.getInventorySize()
+	for i = 1, size, 1 do
+		if(not self:pushStack(i, self:getInventoryDirection(inv))) then
+			return false
+		end
+	end
+	return true
+end
+
+function Inventory:registerInventory(inv, dir)
+	self.invDirections[inv] = dir
+end
+
+function Inventory:getInventoryDirection(inv)
+	local dir = self.invDirections[inv]
+	if dir == nil then
+		error("Unknown inventory '"..tostring(inv).."'")
+	end
+	return dir
 end
