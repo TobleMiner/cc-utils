@@ -1,5 +1,3 @@
-local Inventory = inventory.Inventory
-
 Reactor = { }
 Reactor.__index = Reactor
 
@@ -172,6 +170,9 @@ end
 function Layout.fromFile(fname)
 	local layout = Layout(0, 0)
 	local flhndl = fs.open(fname, "r")
+	if not flhndl then
+		error("Can't open '"..tostring(fname).."'")
+	end
 	local line = flhndl.readLine()
 	while line ~= nil  do
 		if #line > 0 then
