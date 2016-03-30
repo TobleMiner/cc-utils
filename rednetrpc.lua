@@ -18,18 +18,31 @@ function RednetRpc.new(modemSide)
 	return rednet
 end
 
+function RednetRpc.getID(len)
+	local len = len or 10
+	local chars = 'abcdefghijklmopqrstuvwxyz1234567890'
+	local str = ''
+	for i = 1, len, 1 do
+		local j = math.random(#chars)
+		local c = chars:sub(j,j)
+		str = str..c
+	end
+	return str
+end
+
 function RednetRpc:processResponse(response)
 	local data = textutils.unserialize(response)
 	return data
 end
 
 function RednetRpc:callRemote(id, action, args)
-	local call = { action=action, args=args }
-	rednet.send(id, textutils.serialize(call))
+	local rpcid = RednetRpc.getID()
+	local call = { action=action, rpcid=rpcid, args=args }
+	rednet.send(id, textutils.serialize(call), 'rpc')
 	local tries = 10
 	while true do
 		tries = tries - 1
-		rid, msg = rednet.receive(3)
+		rid, msg = rednet.receive('rpc_'..rpcid, 3)
 		if rid == nil or tries == 0 then
 			return false
 		end
@@ -50,12 +63,13 @@ end
 function RednetRpc:execRPC(msg)
 	local data = textutils.unserialize(msg)
 	local funcname = data['action']
+	local rpcid = data['rpcid']
 	local func = self.functions[funcname]
 	if func == nil then
 		error("Unknown RPC '"..tostring(funcname).."'")
 	end
 	local args = data['args']
-	if args == nil then
+	if not args then
 		args = { }
 	end
 	local success, retval = pcall(function()
@@ -64,22 +78,24 @@ function RednetRpc:execRPC(msg)
 	if not success then
 		error('RPC failed: '..retval)
 	end
-	return retval
+	return rpcid, retval
 end
 
 function RednetRpc:listen()
 	while true do
-		local _, sender, msg = os.pullEvent('rednet_message')
-		local success, data = pcall(function()
+		local sender, msg = rednet.receive('rpc')
+		local success, rpcid, data = pcall(function()
 				return self:execRPC(msg)
 			end)
 		local retval = { success=success }
 		if success then
 			retval['data'] = data
 		else
-			retval['error'] = data
-			print('RPC failed: '..data)
+			retval['error'] = rpcid
+			print('RPC failed: '..rpcid)
 		end
-		rednet.send(sender, textutils.serialize(retval))
+		if rpcid then
+			rednet.send(sender, textutils.serialize(retval), 'rpc_'..rpcid)
+		end
 	end
 end
