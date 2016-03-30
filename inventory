@@ -151,7 +151,7 @@ function SlotObserver.new(slot)
 end
 
 function SlotObserver:run(inv)
-	local stack = inv.getStack(self.slot)
+	local stack = inv:getStack(self.slot)
 	self:runSlot(inv, stack)
 end
 
