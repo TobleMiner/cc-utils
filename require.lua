@@ -1,7 +1,4 @@
 _G['require'] = function(fname)
-	local f = loadfile(fname)
-	if not f then
-		error("Can't open '"..tostring(fname).."'")
-	end
+	local f = assert(loadfile(fname))
 	f()
 end
