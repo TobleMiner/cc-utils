@@ -26,7 +26,16 @@ end
 
 function Client:callRemote(side, func, ...)
 	local args = { side, func, {...} }
-	return self.rpc:callRemote(self.id, 'peripheral.call', args)
+	local success, data = self.rpc:callRemote(self.id, 'peripheral.call', args)
+	if not success then
+		print("Remote peripheral didn't answer")
+		return nil
+	end
+	if data.success then
+		return data.data
+	else
+		print(data.error)
+	end
 end
 
 local Server = { }

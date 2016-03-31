@@ -255,6 +255,7 @@ function LayoutManager.new(reactor, layout)
 	setmetatable(manager, LayoutManager)
 	manager.reactor = reactor
 	manager.layout = layout
+	manager.layoutOk = true
 	manager.intervalPoll = 10
 	return manager
 end
@@ -337,6 +338,7 @@ function LayoutManager:run()
 				end
 			end
 		end
+		self.layoutOk = layoutOk
 		if layoutOk then
 			self:execCallback(self.callbackOk)
 		else
@@ -380,4 +382,8 @@ end
 
 function LayoutManager:setPollInterval(interval)
 	self.intervalPoll = interval
+end
+
+function LayoutManager:isLayoutOk()
+	return self.layoutOk
 end
