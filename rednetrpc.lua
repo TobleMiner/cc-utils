@@ -60,10 +60,8 @@ function RednetRpc:registerProcedure(name, func)
 	self.functions[name] = func
 end
 
-function RednetRpc:execRPC(msg)
-	local data = textutils.unserialize(msg)
+function RednetRpc:execRPC(data)
 	local funcname = data['action']
-	local rpcid = data['rpcid']
 	local func = self.functions[funcname]
 	if func == nil then
 		error("Unknown RPC '"..tostring(funcname).."'")
@@ -78,24 +76,32 @@ function RednetRpc:execRPC(msg)
 	if not success then
 		error('RPC failed: '..retval)
 	end
-	return rpcid, retval
+	return retval
 end
 
 function RednetRpc:listen()
 	while true do
 		local sender, msg = rednet.receive('rpc')
 		local success, rpcid, data = pcall(function()
-				return self:execRPC(msg)
+				local data = textutils.unserialize(msg)
+				local rpcid = data['rpcid']
+				assert(type(rpcid) == 'string', 'rpcid must be of type string')
+				return rpcid, data
 			end)
-		local retval = { success=success }
 		if success then
-			retval['data'] = data
-		else
-			retval['error'] = rpcid
-			print('RPC failed: '..rpcid)
-		end
-		if rpcid then
+			local success, data = pcall(function()
+					return self:execRPC(data)
+				end)
+			local retval = { success=success }
+			if success then
+				retval['data'] = data
+			else
+				retval['error'] = data
+				print('RPC failed: '..data)
+			end
 			rednet.send(sender, textutils.serialize(retval), 'rpc_'..rpcid)
+		else
+			print('RPC failed: '..rpcid)
 		end
 	end
 end
